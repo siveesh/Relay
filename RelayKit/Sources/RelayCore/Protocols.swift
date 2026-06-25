@@ -18,6 +18,14 @@ public protocol CommandStoring: Sendable {
     func save(_ commands: [RelayCommand]) async throws
 }
 
+// MARK: - History
+
+/// Storage abstraction for the execution history log.
+public protocol HistoryStoring: Sendable {
+    func load() async throws -> [ExecutionRecord]
+    func save(_ records: [ExecutionRecord]) async throws
+}
+
 // MARK: - Search
 
 /// Search abstraction over the command library. Pure and synchronous so it can run inline

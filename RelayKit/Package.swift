@@ -34,5 +34,6 @@ let package = Package(
         .testTarget(name: "RelaySearchTests", dependencies: ["RelaySearch"]),
         .testTarget(name: "RelayCommandPacksTests", dependencies: ["RelayCommandPacks"]),
         .testTarget(name: "RelayTasksTests", dependencies: ["RelayTasks"]),
+        .testTarget(name: "RelaySecurityTests", dependencies: ["RelaySecurity"]),
     ]
 )

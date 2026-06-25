@@ -2,6 +2,7 @@ import Foundation
 import RelayCore
 import RelayStorage
 import RelaySearch
+import RelaySecurity
 import RelayNotifications
 import RelayUI
 
@@ -20,8 +21,15 @@ final class AppEnvironment {
     /// The single source of truth for the command library (loaded from `commandStore`).
     let library: CommandLibraryModel
 
+    /// The execution-history log.
+    let history: HistoryModel
+
+    /// Coordinates execution (confirmation, running, logging, notifications, result display).
+    let runCoordinator: RunCoordinator
+
     init(
         commandStore: any CommandStoring,
+        historyStore: any HistoryStoring,
         search: any CommandSearching,
         executor: any CommandExecuting,
         notifications: any NotificationPosting
@@ -31,14 +39,18 @@ final class AppEnvironment {
         self.executor = executor
         self.notifications = notifications
         self.library = CommandLibraryModel(store: commandStore)
+        self.history = HistoryModel(store: historyStore)
+        self.runCoordinator = RunCoordinator(executor: executor, notifications: notifications, history: history)
     }
 
-    /// The production environment: JSON-backed library on disk, seeded on first run.
+    /// The production environment: JSON-backed library + history on disk, seeded on first run.
+    /// Elevation is handled by `AuthorizedExecutor` (macOS system auth, no stored passwords).
     static func live() -> AppEnvironment {
         AppEnvironment(
             commandStore: JSONCommandStore(),
+            historyStore: JSONHistoryStore(),
             search: FuzzySearchEngine(),
-            executor: ShellExecutor(),
+            executor: AuthorizedExecutor(base: ShellExecutor()),
             notifications: NotificationService()
         )
     }

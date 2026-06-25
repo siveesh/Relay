@@ -12,13 +12,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     let environment = AppEnvironment.live()
 
     private var paletteController: PalettePanelController?
+    private var resultPresenter: ResultPanelController?
     private var hotKey: GlobalHotKey?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         applyActivationPolicy()
 
-        // Load the persisted library (seeds samples on first run).
-        Task { await environment.library.load() }
+        // Load persisted state (seeds samples on first run) and request notification access.
+        Task {
+            await environment.library.load()
+            await environment.history.load()
+            await environment.notifications.requestAuthorization()
+        }
+
+        // Wire execution results to a transient glass panel.
+        let presenter = ResultPanelController()
+        resultPresenter = presenter
+        environment.runCoordinator.onResult = { [weak presenter] record in
+            presenter?.show(record)
+        }
 
         let controller = PalettePanelController(environment: environment)
         paletteController = controller

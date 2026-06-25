@@ -54,13 +54,11 @@ final class PalettePanelController: NSObject, NSWindowDelegate {
         panel?.orderOut(nil)
     }
 
-    // MARK: Execution (Milestone 3)
+    // MARK: Execution
 
     private func run(_ command: RelayCommand) {
         hide()
-        // Confirmation, elevation, execution, logging, and notifications are implemented in
-        // Milestone 3. For now we only acknowledge the selection.
-        NSLog("Relay: selected command \"%@\" (execution lands in Milestone 3)", command.name)
+        environment.runCoordinator.requestRun(command)
     }
 
     // MARK: Window construction & layout

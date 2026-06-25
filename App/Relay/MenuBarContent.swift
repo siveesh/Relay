@@ -16,9 +16,6 @@ struct MenuBarContent: View {
         Button("Open Command Palette") { onOpenPalette() }
             .keyboardShortcut(.space, modifiers: .option)
 
-        Button("Manage Commands…") { openWindow(id: WindowID.library) }
-            .keyboardShortcut("l", modifiers: .command)
-
         Divider()
 
         if categories.isEmpty {
@@ -28,7 +25,7 @@ struct MenuBarContent: View {
                 Menu(category) {
                     ForEach(commands(in: category)) { command in
                         Button {
-                            onOpenPalette()
+                            environment.runCoordinator.requestRun(command)
                         } label: {
                             Label(command.name, systemImage: command.icon)
                         }
@@ -36,6 +33,11 @@ struct MenuBarContent: View {
                 }
             }
         }
+
+        Divider()
+
+        Button("Manage Commands…") { openWindow(id: WindowID.library) }
+        Button("Execution History…") { openWindow(id: WindowID.history) }
 
         Divider()
 

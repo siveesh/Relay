@@ -33,6 +33,7 @@ targets:
         PRODUCT_NAME: Relay
         INFOPLIST_FILE: Relay/Info.plist
         CODE_SIGN_ENTITLEMENTS: Relay/Relay.entitlements
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
         # Distribution is local/unsigned for now: no App Sandbox (arbitrary shell
         # execution requires it) and no hardened runtime / notarization yet.
         ENABLE_APP_SANDBOX: NO

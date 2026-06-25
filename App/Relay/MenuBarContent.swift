@@ -10,9 +10,14 @@ struct MenuBarContent: View {
     let environment: AppEnvironment
     let onOpenPalette: () -> Void
 
+    @Environment(\.openWindow) private var openWindow
+
     var body: some View {
         Button("Open Command Palette") { onOpenPalette() }
             .keyboardShortcut(.space, modifiers: .option)
+
+        Button("Manage Commands…") { openWindow(id: WindowID.library) }
+            .keyboardShortcut("l", modifiers: .command)
 
         Divider()
 
@@ -46,7 +51,7 @@ struct MenuBarContent: View {
     }
 
     private var commandsSnapshot: [RelayCommand] {
-        environment.commands
+        environment.library.commands
     }
 
     private var categories: [String] {

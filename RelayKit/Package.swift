@@ -28,9 +28,11 @@ let package = Package(
         .target(name: "RelayCommandPacks", dependencies: ["RelayCore", "RelayStorage"]),
         .target(name: "RelayUI", dependencies: ["RelayCore"]),
 
-        // Tests for the modules carrying real M1 logic.
+        // Tests.
         .testTarget(name: "RelayCoreTests", dependencies: ["RelayCore"]),
         .testTarget(name: "RelayStorageTests", dependencies: ["RelayStorage"]),
         .testTarget(name: "RelaySearchTests", dependencies: ["RelaySearch"]),
+        .testTarget(name: "RelayCommandPacksTests", dependencies: ["RelayCommandPacks"]),
+        .testTarget(name: "RelayTasksTests", dependencies: ["RelayTasks"]),
     ]
 )

@@ -17,37 +17,34 @@ final class AppEnvironment {
     let executor: any CommandExecuting
     let notifications: any NotificationPosting
 
-    /// Synchronous snapshot of the library for UI that needs it immediately (menu bar,
-    /// palette). Replaced by store-driven loading in Milestone 2.
-    private(set) var commands: [RelayCommand]
+    /// The single source of truth for the command library (loaded from `commandStore`).
+    let library: CommandLibraryModel
 
     init(
         commandStore: any CommandStoring,
         search: any CommandSearching,
         executor: any CommandExecuting,
-        notifications: any NotificationPosting,
-        seedCommands: [RelayCommand]
+        notifications: any NotificationPosting
     ) {
         self.commandStore = commandStore
         self.search = search
         self.executor = executor
         self.notifications = notifications
-        self.commands = seedCommands
+        self.library = CommandLibraryModel(store: commandStore)
     }
 
-    /// The production environment for Milestone 1: in-memory sample library.
+    /// The production environment: JSON-backed library on disk, seeded on first run.
     static func live() -> AppEnvironment {
         AppEnvironment(
-            commandStore: InMemoryCommandStore(seed: RelayCommand.samples),
+            commandStore: JSONCommandStore(),
             search: FuzzySearchEngine(),
             executor: ShellExecutor(),
-            notifications: NotificationService(),
-            seedCommands: RelayCommand.samples
+            notifications: NotificationService()
         )
     }
 
     /// Builds a fresh palette view model bound to the current library.
     func makePaletteModel() -> CommandPaletteModel {
-        CommandPaletteModel(commands: commands, search: search)
+        CommandPaletteModel(commands: library.commands, search: search)
     }
 }

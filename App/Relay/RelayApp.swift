@@ -18,8 +18,18 @@ struct RelayApp: App {
         }
         .menuBarExtraStyle(.menu)
 
+        Window("Command Library", id: WindowID.library) {
+            CommandLibraryView(library: appDelegate.environment.library)
+        }
+        .defaultSize(width: 880, height: 620)
+
         Settings {
             SettingsView()
         }
     }
+}
+
+/// Stable identifiers for the app's auxiliary windows.
+enum WindowID {
+    static let library = "relay.library"
 }

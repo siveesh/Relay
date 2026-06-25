@@ -17,6 +17,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         applyActivationPolicy()
 
+        // Load the persisted library (seeds samples on first run).
+        Task { await environment.library.load() }
+
         let controller = PalettePanelController(environment: environment)
         paletteController = controller
 

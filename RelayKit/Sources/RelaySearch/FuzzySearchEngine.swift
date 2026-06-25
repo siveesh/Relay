@@ -4,25 +4,30 @@ import RelayCore
 /// Fast in-memory fuzzy search over the command library.
 ///
 /// Matching is subsequence-based (every query character must appear in order). Scoring
-/// rewards exact/prefix matches, contiguous runs, word-boundary hits, and matches against
-/// the name over tags/aliases. Favorites get a small boost.
-///
-/// > Milestone note: frequency/recency signals are layered in at Milestone 4 once history
-/// > exists. The protocol and ranking shape are stable now.
+/// rewards exact/prefix matches, contiguous runs, and matches against the name and aliases
+/// over tags/description. Favorites plus frequency/recency (from history) refine the order.
 public struct FuzzySearchEngine: CommandSearching {
 
     public init() {}
 
-    public func search(_ query: String, in commands: [RelayCommand]) -> [RelayCommand] {
+    public func search(_ query: String, in commands: [RelayCommand], usage: UsageStats) -> [RelayCommand] {
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines).lowercased()
+
         guard !trimmed.isEmpty else {
-            // No query: favorites first, then stable order.
-            return commands.sorted { ($0.favorite ? 1 : 0) > ($1.favorite ? 1 : 0) }
+            // No query: surface favorites and recently/frequently used commands first.
+            return commands
+                .map { ($0, (($0.favorite ? 0.5 : 0.0) + usage.boost(for: $0.id))) }
+                .sorted { lhs, rhs in
+                    if lhs.1 != rhs.1 { return lhs.1 > rhs.1 }
+                    return lhs.0.name.localizedCaseInsensitiveCompare(rhs.0.name) == .orderedAscending
+                }
+                .map(\.0)
         }
 
         let scored: [(command: RelayCommand, score: Double)] = commands.compactMap { command in
-            guard let score = bestScore(for: command, query: trimmed) else { return nil }
-            return (command, score)
+            guard let base = bestScore(for: command, query: trimmed) else { return nil }
+            // Usage is a tie-breaker/refinement on top of textual relevance.
+            return (command, base + usage.boost(for: command.id))
         }
 
         return scored

@@ -1,4 +1,5 @@
 import Testing
+import Foundation
 import RelayCore
 @testable import RelaySearch
 
@@ -29,9 +30,7 @@ struct FuzzySearchEngineTests {
 
     @Test("Subsequence matches but unrelated queries do not")
     func subsequenceAndMiss() {
-        // "gs" is an alias and a subsequence of "Git Status".
         #expect(engine.search("gs", in: commands).contains { $0.name == "Git Status" })
-        // A query that cannot be a subsequence of anything returns no results.
         #expect(engine.search("zzzqzzz", in: commands).isEmpty)
     }
 
@@ -41,5 +40,36 @@ struct FuzzySearchEngineTests {
         let subseq = FuzzySearchEngine.score(query: "tai", in: "the application install")
         #expect(prefix != nil)
         #expect((prefix ?? 0) > (subseq ?? 0))
+    }
+
+    @Test("Usage boost surfaces frequently-used commands on empty query")
+    func usageBoostsRecents() {
+        let frequent = commands.first { !$0.favorite }!   // a non-favorite
+        let records = (0..<10).map { _ in
+            ExecutionRecord(commandID: frequent.id, commandName: frequent.name,
+                            startedAt: Date(), duration: 0.1, exitCode: 0, stdout: "", stderr: "")
+        }
+        let usage = UsageStats.from(records)
+        let results = engine.search("", in: commands, usage: usage)
+        // The heavily-used non-favorite should be ahead of unused non-favorites.
+        let unusedNonFavorites = commands.filter { !$0.favorite && $0.id != frequent.id }
+        let frequentIndex = results.firstIndex { $0.id == frequent.id }!
+        for cmd in unusedNonFavorites {
+            #expect(frequentIndex < results.firstIndex { $0.id == cmd.id }!)
+        }
+    }
+
+    @Test("Recency decays: recent beats old")
+    func recencyDecay() {
+        let usage = UsageStats(
+            counts: [:],
+            lastUsed: [:],
+            referenceDate: Date()
+        )
+        let now = usage.referenceDate
+        let id = UUID()
+        let recent = UsageStats(counts: [id: 1], lastUsed: [id: now], referenceDate: now)
+        let old = UsageStats(counts: [id: 1], lastUsed: [id: now.addingTimeInterval(-30 * 86_400)], referenceDate: now)
+        #expect(recent.boost(for: id) > old.boost(for: id))
     }
 }

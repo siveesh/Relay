@@ -30,6 +30,7 @@ public struct CommandPaletteView: View {
                 searchField
                 if !model.results.isEmpty {
                     Divider().opacity(0.4)
+                    sectionHeader
                     resultsList
                 } else {
                     emptyState
@@ -80,6 +81,21 @@ public struct CommandPaletteView: View {
     }
 
     // MARK: Results
+
+    private var sectionHeader: some View {
+        HStack {
+            Text(model.isShowingSuggestions ? "Recents & Favorites" : "Results")
+                .font(.system(size: 10, weight: .semibold))
+                .tracking(0.5)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Text("↑↓ navigate · ↵ run · esc close")
+                .font(.system(size: 10))
+                .foregroundStyle(.tertiary)
+        }
+        .padding(.horizontal, 20)
+        .padding(.top, 8)
+    }
 
     private var resultsList: some View {
         ScrollViewReader { proxy in

@@ -31,7 +31,14 @@ public protocol HistoryStoring: Sendable {
 /// Search abstraction over the command library. Pure and synchronous so it can run inline
 /// on the main actor within the search latency budget.
 public protocol CommandSearching: Sendable {
-    func search(_ query: String, in commands: [RelayCommand]) -> [RelayCommand]
+    func search(_ query: String, in commands: [RelayCommand], usage: UsageStats) -> [RelayCommand]
+}
+
+public extension CommandSearching {
+    /// Convenience overload without usage signals (e.g. for tests / first run).
+    func search(_ query: String, in commands: [RelayCommand]) -> [RelayCommand] {
+        search(query, in: commands, usage: .empty)
+    }
 }
 
 // MARK: - Variables

@@ -19,12 +19,17 @@ public final class CommandPaletteModel {
     /// Index of the highlighted result within `results`.
     public private(set) var selectionIndex: Int = 0
 
+    /// True while the query is empty — the palette is showing recents/favorites, not results.
+    public private(set) var isShowingSuggestions: Bool = true
+
     private let commands: [RelayCommand]
     private let search: any CommandSearching
+    private let usage: UsageStats
 
-    public init(commands: [RelayCommand], search: any CommandSearching) {
+    public init(commands: [RelayCommand], search: any CommandSearching, usage: UsageStats = .empty) {
         self.commands = commands
         self.search = search
+        self.usage = usage
         recompute()
     }
 
@@ -59,7 +64,9 @@ public final class CommandPaletteModel {
     }
 
     private func recompute() {
-        results = search.search(query, in: commands)
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        isShowingSuggestions = trimmed.isEmpty
+        results = search.search(query, in: commands, usage: usage)
         selectionIndex = 0
     }
 }

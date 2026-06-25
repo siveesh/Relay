@@ -55,8 +55,9 @@ final class AppEnvironment {
         )
     }
 
-    /// Builds a fresh palette view model bound to the current library.
+    /// Builds a fresh palette view model bound to the current library and usage history.
     func makePaletteModel() -> CommandPaletteModel {
-        CommandPaletteModel(commands: library.commands, search: search)
+        let usage = UsageStats.from(history.records)
+        return CommandPaletteModel(commands: library.commands, search: search, usage: usage)
     }
 }

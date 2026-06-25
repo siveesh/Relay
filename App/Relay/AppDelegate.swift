@@ -21,6 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         // Load persisted state (seeds samples on first run) and request notification access.
         Task {
             await environment.library.load()
+            await environment.taskLibrary.load()
             await environment.history.load()
             await environment.notifications.requestAuthorization()
         }

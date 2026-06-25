@@ -4,6 +4,7 @@ import RelayStorage
 import RelaySearch
 import RelaySecurity
 import RelayNotifications
+import RelayTasks
 import RelayUI
 
 /// The application's composition root.
@@ -21,37 +22,54 @@ final class AppEnvironment {
     /// The single source of truth for the command library (loaded from `commandStore`).
     let library: CommandLibraryModel
 
+    /// The workflow/task library.
+    let taskLibrary: TaskLibraryModel
+
     /// The execution-history log.
     let history: HistoryModel
 
-    /// Coordinates execution (confirmation, running, logging, notifications, result display).
+    /// Coordinates execution (confirmation, variable resolution, logging, notifications, result).
     let runCoordinator: RunCoordinator
 
     init(
         commandStore: any CommandStoring,
+        taskStore: any TaskStoring,
         historyStore: any HistoryStoring,
         search: any CommandSearching,
         executor: any CommandExecuting,
-        notifications: any NotificationPosting
+        notifications: any NotificationPosting,
+        resolver: any VariableResolving
     ) {
         self.commandStore = commandStore
         self.search = search
         self.executor = executor
         self.notifications = notifications
         self.library = CommandLibraryModel(store: commandStore)
+        self.taskLibrary = TaskLibraryModel(store: taskStore)
         self.history = HistoryModel(store: historyStore)
-        self.runCoordinator = RunCoordinator(executor: executor, notifications: notifications, history: history)
+
+        let taskRunner = TaskRunner(executor: executor, notifications: notifications, resolver: resolver)
+        self.runCoordinator = RunCoordinator(
+            executor: executor,
+            notifications: notifications,
+            resolver: resolver,
+            taskRunner: taskRunner,
+            history: history
+        )
     }
 
-    /// The production environment: JSON-backed library + history on disk, seeded on first run.
-    /// Elevation is handled by `AuthorizedExecutor` (macOS system auth, no stored passwords).
+    /// The production environment: JSON-backed library + tasks + history on disk, seeded on
+    /// first run. Elevation is handled by `AuthorizedExecutor` (macOS system auth, no stored
+    /// passwords); variables resolve against live system context (clipboard, Finder).
     static func live() -> AppEnvironment {
         AppEnvironment(
             commandStore: JSONCommandStore(),
+            taskStore: JSONTaskStore(),
             historyStore: JSONHistoryStore(),
             search: FuzzySearchEngine(),
             executor: AuthorizedExecutor(base: ShellExecutor()),
-            notifications: NotificationService()
+            notifications: NotificationService(),
+            resolver: VariableResolver(context: SystemContextProvider())
         )
     }
 

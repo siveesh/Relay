@@ -18,6 +18,14 @@ public protocol CommandStoring: Sendable {
     func save(_ commands: [RelayCommand]) async throws
 }
 
+// MARK: - Tasks
+
+/// Storage abstraction for the workflow/task library.
+public protocol TaskStoring: Sendable {
+    func loadTasks() async throws -> [RelayTask]
+    func save(_ tasks: [RelayTask]) async throws
+}
+
 // MARK: - History
 
 /// Storage abstraction for the execution history log.

@@ -2,9 +2,10 @@ import AppKit
 import Observation
 import RelayCore
 import RelayNotifications
+import RelayTasks
 
-/// Coordinates command execution: confirmation, running, history logging, notifications, and
-/// surfacing the result. This is the single entry point both the palette and the menu use.
+/// Coordinates command and task execution: confirmation, variable resolution, running, history
+/// logging, notifications, and surfacing the result. Single entry point for palette and menu.
 @MainActor
 @Observable
 final class RunCoordinator {
@@ -13,14 +14,24 @@ final class RunCoordinator {
 
     private let executor: any CommandExecuting
     private let notifications: any NotificationPosting
+    private let resolver: any VariableResolving
+    private let taskRunner: TaskRunner
     let history: HistoryModel
 
     /// Presentation hook set by the app delegate to show a result panel.
     var onResult: ((ExecutionRecord) -> Void)?
 
-    init(executor: any CommandExecuting, notifications: any NotificationPosting, history: HistoryModel) {
+    init(
+        executor: any CommandExecuting,
+        notifications: any NotificationPosting,
+        resolver: any VariableResolving,
+        taskRunner: TaskRunner,
+        history: HistoryModel
+    ) {
         self.executor = executor
         self.notifications = notifications
+        self.resolver = resolver
+        self.taskRunner = taskRunner
         self.history = history
     }
 
@@ -30,14 +41,30 @@ final class RunCoordinator {
         Task { await run(command) }
     }
 
+    /// Runs a workflow task, posting a summary notification on completion.
+    func requestRun(_ task: RelayTask) {
+        Task {
+            isRunning = true
+            defer { isRunning = false }
+            let result = await taskRunner.run(task)
+            let failures = result.outcomes.filter { !$0.success }.count
+            await notifications.post(
+                result.success
+                    ? .completed(title: task.name, body: "Workflow completed.")
+                    : .failed(title: task.name, body: "\(failures) step(s) failed.")
+            )
+        }
+    }
+
     private func run(_ command: RelayCommand) async {
         isRunning = true
         defer { isRunning = false }
 
+        let resolvedCommand = await resolve(command)
         let startedAt = Date()
         let record: ExecutionRecord
         do {
-            let result = try await executor.run(command)
+            let result = try await executor.run(resolvedCommand)
             record = ExecutionRecord.from(result, command: command, startedAt: startedAt)
         } catch {
             record = ExecutionRecord.failure(error.localizedDescription, command: command, startedAt: startedAt)
@@ -58,6 +85,19 @@ final class RunCoordinator {
         if command.captureOutput || !record.succeeded {
             onResult?(record)
         }
+    }
+
+    /// Expands Relay variables in the command text, working directory, and environment.
+    private func resolve(_ command: RelayCommand) async -> RelayCommand {
+        var resolved = command
+        resolved.command = await resolver.resolve(command.command)
+        resolved.workingDirectory = await resolver.resolve(command.workingDirectory)
+        var environment: [String: String] = [:]
+        for (key, value) in command.environment {
+            environment[key] = await resolver.resolve(value)
+        }
+        resolved.environment = environment
+        return resolved
     }
 
     /// Modal confirmation before running a command that requires it.

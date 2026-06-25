@@ -23,6 +23,14 @@ struct RelayApp: App {
         }
         .defaultSize(width: 880, height: 620)
 
+        Window("Workflows", id: WindowID.tasks) {
+            TaskLibraryView(
+                taskLibrary: appDelegate.environment.taskLibrary,
+                runCoordinator: appDelegate.environment.runCoordinator
+            )
+        }
+        .defaultSize(width: 880, height: 620)
+
         Window("Execution History", id: WindowID.history) {
             HistoryView(history: appDelegate.environment.history)
         }
@@ -37,5 +45,6 @@ struct RelayApp: App {
 /// Stable identifiers for the app's auxiliary windows.
 enum WindowID {
     static let library = "relay.library"
+    static let tasks = "relay.tasks"
     static let history = "relay.history"
 }

@@ -22,7 +22,7 @@ let package = Package(
 
         .target(name: "RelayStorage", dependencies: ["RelayCore"]),
         .target(name: "RelaySearch", dependencies: ["RelayCore"]),
-        .target(name: "RelayTasks", dependencies: ["RelayCore"]),
+        .target(name: "RelayTasks", dependencies: ["RelayCore", "RelayNotifications"]),
         .target(name: "RelaySecurity", dependencies: ["RelayCore"]),
         .target(name: "RelayNotifications", dependencies: ["RelayCore"]),
         .target(name: "RelayCommandPacks", dependencies: ["RelayCore", "RelayStorage"]),

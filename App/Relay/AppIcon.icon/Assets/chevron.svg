@@ -1,5 +1,8 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024">
-  <path d="M388 312 L636 512 L388 712"
-        fill="none" stroke="#FFFFFF" stroke-width="150"
-        stroke-linecap="round" stroke-linejoin="round"/>
+  <!-- Folded two-facet forward chevron: upper wing light, lower wing cyan,
+       meeting at the right tip. The Liquid Glass material adds depth/specular. -->
+  <path d="M344 250 L708 512" fill="none" stroke="#FFFFFF"
+        stroke-width="158" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M708 512 L344 774" fill="none" stroke="#74CEFF"
+        stroke-width="158" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>

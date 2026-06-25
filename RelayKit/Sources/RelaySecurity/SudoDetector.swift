@@ -1,4 +1,5 @@
 import Foundation
+import LocalAuthentication
 
 /// Whether Touch ID is wired into `sudo` via PAM.
 public enum TouchIDSudoStatus: Sendable, Equatable {
@@ -10,17 +11,20 @@ public enum TouchIDSudoStatus: Sendable, Equatable {
     case unknown
 }
 
-/// Read-only detection of the host's `sudo` Touch ID configuration.
+/// Read-only detection of the host's Touch ID hardware and `sudo` configuration.
 ///
-/// Relay only *detects and guides* — it never edits PAM configuration. (Guidance UI lands in
-/// Milestone 6; this detector is the underlying, side-effect-free primitive.)
+/// Relay only *detects and guides* — it never edits PAM configuration. (Guidance UI lives in
+/// the app; this detector is the underlying, side-effect-free primitive.)
 public struct SudoDetector: Sendable {
 
     public init() {}
 
+    /// The shell snippet a user can run to enable Touch ID for `sudo` (macOS 14+).
+    /// Relay shows this as guidance; it never runs it automatically.
+    public static let enableGuidanceCommand =
+        "echo 'auth       sufficient     pam_tid.so' | sudo tee /etc/pam.d/sudo_local"
+
     /// Detects whether `sudo` is configured to accept Touch ID.
-    ///
-    /// macOS 14+ keeps a persistent `sudo_local` for this; older systems edit `sudo` directly.
     public func touchIDStatus() -> TouchIDSudoStatus {
         let candidates = ["/etc/pam.d/sudo_local", "/etc/pam.d/sudo"]
         var sawAnyFile = false
@@ -33,7 +37,7 @@ public struct SudoDetector: Sendable {
 
             for line in contents.split(separator: "\n") {
                 let trimmed = line.trimmingCharacters(in: .whitespaces)
-                guard !trimmed.hasPrefix("#") else { continue }     // ignore comments
+                guard !trimmed.hasPrefix("#") else { continue }
                 if trimmed.contains("pam_tid.so") { return .enabled }
             }
         }
@@ -41,9 +45,11 @@ public struct SudoDetector: Sendable {
         return sawAnyFile ? .notConfigured : .unknown
     }
 
-    /// Whether a Touch ID-capable sensor is present (best-effort, expanded in Milestone 6).
+    /// Whether a Touch ID sensor is present and enrolled, via `LAContext`.
     public func hasTouchIDHardware() -> Bool {
-        // Real LAContext-based probing is added in Milestone 6.
-        false
+        let context = LAContext()
+        var error: NSError?
+        let canUseBiometrics = context.canEvaluatePolicy(.deviceOwnerAuthenticationWithBiometrics, error: &error)
+        return canUseBiometrics && context.biometryType == .touchID
     }
 }

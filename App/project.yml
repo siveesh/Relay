@@ -27,6 +27,12 @@ targets:
     deploymentTarget: "26.0"
     sources:
       - path: Relay
+        excludes:
+          - "AppIcon.icon"
+      # Liquid Glass app icon (Icon Composer .icon document) — added as a single
+      # file reference so actool compiles it rather than copying its contents.
+      - path: Relay/AppIcon.icon
+        type: file
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.relay.app

@@ -1,0 +1,31 @@
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon?
+
+# Xcode
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+xcuserdata/
+*.xcworkspace/xcuserdata/
+DerivedData/
+build/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# XcodeGen generates the project; do not commit it.
+App/Relay.xcodeproj/
+
+# Swift Package Manager
+.build/
+.swiftpm/
+Package.resolved
+
+# Misc
+*.log
+*.tmp

@@ -1,0 +1,56 @@
+name: Relay
+
+options:
+  bundleIdPrefix: com.relay
+  deploymentTarget:
+    macOS: "26.0"
+  createIntermediateGroups: true
+
+packages:
+  RelayKit:
+    path: ../RelayKit
+
+settings:
+  base:
+    SWIFT_VERSION: "6.0"
+    CODE_SIGN_STYLE: Manual
+    CODE_SIGN_IDENTITY: "-"
+    DEVELOPMENT_TEAM: ""
+    ENABLE_HARDENED_RUNTIME: NO
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+
+targets:
+  Relay:
+    type: application
+    platform: macOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: Relay
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.relay.app
+        PRODUCT_NAME: Relay
+        INFOPLIST_FILE: Relay/Info.plist
+        CODE_SIGN_ENTITLEMENTS: Relay/Relay.entitlements
+        # Distribution is local/unsigned for now: no App Sandbox (arbitrary shell
+        # execution requires it) and no hardened runtime / notarization yet.
+        ENABLE_APP_SANDBOX: NO
+        SWIFT_VERSION: "6.0"
+    dependencies:
+      - package: RelayKit
+        product: RelayCore
+      - package: RelayKit
+        product: RelayUI
+      - package: RelayKit
+        product: RelayStorage
+      - package: RelayKit
+        product: RelaySearch
+      - package: RelayKit
+        product: RelayTasks
+      - package: RelayKit
+        product: RelaySecurity
+      - package: RelayKit
+        product: RelayNotifications
+      - package: RelayKit
+        product: RelayCommandPacks

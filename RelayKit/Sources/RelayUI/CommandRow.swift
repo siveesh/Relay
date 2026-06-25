@@ -56,6 +56,17 @@ struct CommandRow: View {
             }
         }
         .contentShape(RelayTheme.rowShape)
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel(accessibilityLabel)
+        .accessibilityHint("Runs this command")
+    }
+
+    private var accessibilityLabel: String {
+        var parts = [command.name, "category \(command.category)"]
+        if command.favorite { parts.append("favorite") }
+        if command.requiresElevation { parts.append("requires administrator privileges") }
+        if !command.details.isEmpty { parts.append(command.details) }
+        return parts.joined(separator: ", ")
     }
 }
 

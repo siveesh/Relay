@@ -6,8 +6,12 @@ Relay lets you execute shell commands and multi-step workflows without opening T
 It is a focused command runner — *not* a general application launcher — built natively in
 Swift/SwiftUI with a Liquid Glass interface.
 
-> Status: **Milestone 1** — project structure, module architecture, menu bar lifecycle,
-> and the global-hotkey Liquid Glass command palette.
+> Status: **Milestones 1–7 complete** — full command palette, persistence & CRUD, real
+> execution with logging and notifications, history-driven fuzzy search, a workflow/task
+> runner with variables, security (Touch ID detection + privileged-helper design), and a
+> polish pass (animation, accessibility, performance, docs).
+
+See [ARCHITECTURE.md](ARCHITECTURE.md) and [SECURITY.md](SECURITY.md) for design detail.
 
 ## Requirements
 
@@ -55,9 +59,9 @@ The generated `App/Relay.xcodeproj` is **not** committed — regenerate it with 
 | Milestone | Scope |
 |---|---|
 | **M1** ✅ | Structure, architecture, menu bar lifecycle, command palette window |
-| M2 | Command model, JSON persistence, CRUD editor |
-| M3 | Shell execution, logging, notifications |
-| M4 | Fuzzy search, favorites, aliases, history |
-| M5 | Task runner, variables, workflow engine |
-| M6 | Security: Touch ID detection, privileged helper |
-| M7 | Polish: animation, accessibility, performance, docs |
+| **M2** ✅ | Command model, JSON persistence, CRUD editor |
+| **M3** ✅ | Shell execution, logging, notifications |
+| **M4** ✅ | Fuzzy search, favorites, aliases, history |
+| **M5** ✅ | Task runner, variables, workflow engine |
+| **M6** ✅ | Security: Touch ID detection, privileged helper |
+| **M7** ✅ | Polish: animation, accessibility, performance, docs |

@@ -13,6 +13,8 @@ public struct CommandPaletteView: View {
     private let onDismiss: () -> Void
 
     @FocusState private var searchFocused: Bool
+    @State private var appeared = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
         model: CommandPaletteModel,
@@ -45,7 +47,14 @@ public struct CommandPaletteView: View {
         }
         .shadow(color: .black.opacity(0.35), radius: 30, y: 12)
         .padding(24)
-        .onAppear { searchFocused = true }
+        .scaleEffect(appeared || reduceMotion ? 1 : 0.97)
+        .opacity(appeared || reduceMotion ? 1 : 0)
+        .onAppear {
+            searchFocused = true
+            withAnimation(.spring(response: 0.28, dampingFraction: 0.85)) { appeared = true }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Relay command palette")
     }
 
     // MARK: Search field
@@ -60,6 +69,8 @@ public struct CommandPaletteView: View {
                 .textFieldStyle(.plain)
                 .font(.system(size: 20, weight: .regular))
                 .focused($searchFocused)
+                .accessibilityLabel("Command search")
+                .accessibilityHint("Type to search; press Return to run the top result")
                 .onSubmit(runSelected)
                 .onKeyPress(.upArrow) { model.selectPrevious(); return .handled }
                 .onKeyPress(.downArrow) { model.selectNext(); return .handled }
@@ -104,14 +115,17 @@ public struct CommandPaletteView: View {
                     ForEach(model.results) { command in
                         CommandRow(command: command, isSelected: command.id == model.selectedCommand?.id)
                             .id(command.id)
+                            .contentShape(RelayTheme.rowShape)
                             .onTapGesture { onRun(command) }
                             .onHover { hovering in
                                 if hovering { model.select(command) }
                             }
+                            .accessibilityAddTraits(.isButton)
                     }
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 8)
+                .animation(.easeOut(duration: 0.12), value: model.selectionIndex)
             }
             .frame(maxHeight: RelayTheme.Metrics.paletteMaxHeight)
             .onChange(of: model.selectionIndex) { _, _ in

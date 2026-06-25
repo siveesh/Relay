@@ -139,10 +139,14 @@ blindly. Do not continue past a milestone without confirmation.
 
 ## 10. Milestones
 
-1. **M1** — Project structure, architecture, navigation, menu bar lifecycle, palette window. *(current)*
-2. M2 — Command model finalized, JSON persistence, CRUD.
-3. M3 — Shell execution, logging, notifications.
-4. M4 — Search engine, favorites, aliases, history.
-5. M5 — Task runner, variables, workflow engine.
-6. M6 — Security: Touch ID detection, privileged helper design.
-7. M7 — Polish: animation, accessibility, performance, documentation.
+1. **M1** ✅ — Project structure, architecture, navigation, menu bar lifecycle, palette window.
+2. **M2** ✅ — Command model finalized, JSON persistence, CRUD.
+3. **M3** ✅ — Shell execution, logging, notifications.
+4. **M4** ✅ — Search engine, favorites, aliases, history.
+5. **M5** ✅ — Task runner, variables, workflow engine.
+6. **M6** ✅ — Security: Touch ID detection, privileged helper design.
+7. **M7** ✅ — Polish: animation, accessibility, performance, documentation.
+
+All seven milestones are implemented. Future work lives at the extension points in §8 (AI
+suggestions, the signed privileged-helper executable + XPC, sync / SSH remote execution) and
+in revisiting distribution (notarization / sandbox subset).

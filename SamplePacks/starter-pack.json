@@ -1,0 +1,85 @@
+{
+  "packName": "Relay Starter Pack",
+  "version": "0.1",
+  "commands": [
+    {
+      "id": "start-lm-studio",
+      "name": "Start LM Studio",
+      "description": "Launch LM Studio.",
+      "category": "AI",
+      "icon": "brain",
+      "tags": [
+        "ai",
+        "llm",
+        "lmstudio"
+      ],
+      "aliases": [
+        "lm",
+        "start lm"
+      ],
+      "shell": "zsh",
+      "workingDirectory": "$Home",
+      "environment": {},
+      "command": "open -a 'LM Studio'",
+      "timeoutSeconds": 30,
+      "requiresConfirmation": false,
+      "requiresElevation": false,
+      "runInBackground": true,
+      "captureOutput": true,
+      "notifyOnCompletion": true,
+      "favorite": true
+    },
+    {
+      "id": "tailscale-status",
+      "name": "Tailscale Status",
+      "description": "Show Tailscale connection status.",
+      "category": "Network",
+      "icon": "network",
+      "tags": [
+        "tailscale",
+        "vpn",
+        "network"
+      ],
+      "aliases": [
+        "ts status"
+      ],
+      "shell": "zsh",
+      "workingDirectory": "$Home",
+      "environment": {},
+      "command": "tailscale status",
+      "timeoutSeconds": 20,
+      "requiresConfirmation": false,
+      "requiresElevation": false,
+      "runInBackground": false,
+      "captureOutput": true,
+      "notifyOnCompletion": false,
+      "favorite": true
+    },
+    {
+      "id": "flush-dns",
+      "name": "Flush DNS Cache",
+      "description": "Flush macOS DNS cache. Requires sudo.",
+      "category": "System",
+      "icon": "globe",
+      "tags": [
+        "dns",
+        "network",
+        "system"
+      ],
+      "aliases": [
+        "dns flush"
+      ],
+      "shell": "zsh",
+      "workingDirectory": "$Home",
+      "environment": {},
+      "command": "sudo dscacheutil -flushcache; sudo killall -HUP mDNSResponder",
+      "timeoutSeconds": 60,
+      "requiresConfirmation": true,
+      "requiresElevation": true,
+      "runInBackground": false,
+      "captureOutput": true,
+      "notifyOnCompletion": true,
+      "favorite": false
+    }
+  ]
+}

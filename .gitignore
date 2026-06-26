@@ -1,31 +1,67 @@
-# macOS
+# ── macOS ─────────────────────────────────────────────────────────────────────
 .DS_Store
 .AppleDouble
 .LSOverride
 Icon?
+._*
+.Spotlight-V100
+.Trashes
+*.icloud
 
-# Xcode
-*.xcodeproj/*
-!*.xcodeproj/project.pbxproj
-!*.xcodeproj/xcshareddata/
+# ── Xcode ─────────────────────────────────────────────────────────────────────
+# XcodeGen generates Relay.xcodeproj from project.yml — do not commit the output.
+App/Relay.xcodeproj/
+
+# User-specific Xcode state
 xcuserdata/
 *.xcworkspace/xcuserdata/
-DerivedData/
+*.xcuserstate
+
+# Build artefacts
 build/
+DerivedData/
 *.moved-aside
 *.hmap
 *.ipa
 *.dSYM.zip
 *.dSYM
 
-# XcodeGen generates the project; do not commit it.
-App/Relay.xcodeproj/
-
-# Swift Package Manager
+# ── Swift Package Manager ─────────────────────────────────────────────────────
 .build/
 .swiftpm/
-Package.resolved
+# Package.resolved is committed to pin dependency versions.
+# Remove the next line only if you intentionally want floating deps.
+# Package.resolved
 
-# Misc
+# ── Build output ──────────────────────────────────────────────────────────────
+# The Build/ folder holds a pre-built app for quick testing.
+# Exclude the binary bundle; the folder itself is tracked via Build/.gitkeep.
+Build/Relay.app
+/Build/Relay.app/
+
+# ── Distribution ──────────────────────────────────────────────────────────────
+# DMG files belong as GitHub Release assets, not in the repo.
+*.dmg
+Dist/
+
+# ── Credentials & secrets ─────────────────────────────────────────────────────
+*.p12
+*.mobileprovision
+*.provisionprofile
+*.cer
+ExportOptions.plist
+AuthKey_*.p8
+secrets/
+.env
+.env.*
+
+# ── Editors ───────────────────────────────────────────────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ── Misc ──────────────────────────────────────────────────────────────────────
 *.log
 *.tmp

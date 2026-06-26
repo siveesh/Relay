@@ -37,10 +37,20 @@ final class SecurityModel {
 
     private func describe(_ error: PrivilegedHelperError) -> String {
         switch error {
-        case .notInstalled: return "The helper is not installed."
-        case let .registrationFailed(reason): return "Registration failed: \(reason)"
-        case let .operationFailed(reason): return "Operation failed: \(reason)"
-        case .unavailable: return "The helper executable ships in a later build."
+        case .notInstalled:
+            return "The helper is not installed."
+        case let .registrationFailed(reason):
+            if reason.localizedCaseInsensitiveContains("unable to read plist") {
+                return "The helper launch daemon plist is missing from the app bundle. Rebuild the app from Xcode to include it."
+            }
+            if reason.localizedCaseInsensitiveContains("not found") || reason.localizedCaseInsensitiveContains("notFound") {
+                return "The helper executable is not bundled in this build. The privileged helper ships in a signed release build."
+            }
+            return "Registration failed: \(reason)"
+        case let .operationFailed(reason):
+            return "Operation failed: \(reason)"
+        case .unavailable:
+            return "The helper executable ships in a signed release build."
         }
     }
 }

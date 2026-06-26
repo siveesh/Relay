@@ -85,7 +85,12 @@ private struct SecuritySettingsView: View {
                 }
                 Text("For built-in privileged actions Relay uses a signed helper that exposes only a fixed set of curated operations — never arbitrary commands.")
                     .font(.caption).foregroundStyle(.secondary)
-                Button("Install Helper…") { model.installHelper() }
+                if model.helperStatus == .notFound {
+                    Text("The helper executable is not included in this build. It ships in the signed release version of Relay.")
+                        .font(.caption).foregroundStyle(.secondary)
+                } else {
+                    Button("Install Helper…") { model.installHelper() }
+                }
                 if let message = model.message {
                     Text(message).font(.caption).foregroundStyle(.secondary)
                 }

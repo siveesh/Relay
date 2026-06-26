@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<!-- Label must match ServiceManagementHelperClient.machServiceName -->
+	<key>Label</key>
+	<string>com.relay.app.helper</string>
+
+	<!-- Mach service the helper vends over XPC -->
+	<key>MachServices</key>
+	<dict>
+		<key>com.relay.app.helper</key>
+		<true/>
+	</dict>
+
+	<!--
+	  Path to the helper executable, relative to the app bundle root.
+	  The binary lives alongside this plist so code-signing can be verified
+	  as a unit. SMAppService uses BundleProgram (not Program) so the OS
+	  can locate it inside the app even before the daemon is registered.
+	-->
+	<key>BundleProgram</key>
+	<string>Contents/Library/LaunchDaemons/com.relay.helper</string>
+</dict>
+</plist>

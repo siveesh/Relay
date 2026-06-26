@@ -6,6 +6,7 @@ import SwiftUI
 struct RelayApp: App {
 
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
+    @Environment(\.openWindow) private var openWindow
 
     var body: some Scene {
         MenuBarExtra {
@@ -17,6 +18,14 @@ struct RelayApp: App {
             Image(systemName: "chevron.right.circle.fill")
         }
         .menuBarExtraStyle(.menu)
+        .commands {
+            CommandGroup(replacing: .help) {
+                Button("Relay Help") {
+                    openWindow(id: WindowID.help)
+                }
+                .keyboardShortcut("?", modifiers: .command)
+            }
+        }
 
         Window("Command Library", id: WindowID.library) {
             CommandLibraryView(library: appDelegate.environment.library)
@@ -46,6 +55,11 @@ struct RelayApp: App {
         }
         .windowResizability(.contentSize)
 
+        Window("Relay Help", id: WindowID.help) {
+            HelpView()
+        }
+        .defaultSize(width: 780, height: 700)
+
         Settings {
             SettingsView(environment: appDelegate.environment)
         }
@@ -59,4 +73,5 @@ enum WindowID {
     static let history       = "relay.history"
     static let about         = "relay.about"
     static let historyImport = "relay.historyImport"
+    static let help          = "relay.help"
 }

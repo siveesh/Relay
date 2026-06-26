@@ -33,11 +33,15 @@ final class PalettePanelController: NSObject, NSWindowDelegate {
         }
     }
 
-    func show() {
+    func show() { show(withQuery: nil) }
+
+    /// Opens the palette, optionally pre-filling the query (e.g. from a Finder Service drop).
+    func show(withQuery query: String?) {
         let panel = panel ?? makePanel()
         self.panel = panel
 
         let model = environment.makePaletteModel()
+        if let query, !query.isEmpty { model.query = query }
         let root = CommandPaletteView(
             model: model,
             onRun: { [weak self] command in self?.run(command) },

@@ -37,6 +37,7 @@ struct MenuBarContent: View {
         Divider()
 
         Button("Manage Commands…") { openWindow(id: WindowID.library) }
+        Button("Import Shell History…") { openWindow(id: WindowID.historyImport) }
         Button("Workflows…") { openWindow(id: WindowID.tasks) }
         Button("Execution History…") { openWindow(id: WindowID.history) }
 

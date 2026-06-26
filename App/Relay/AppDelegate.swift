@@ -62,6 +62,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             guard let dict = note.object as? [String: String] else { return }
             self?.environment.updateCustomVariables(dict)
         }
+
+        // Open palette when triggered from an Apple Shortcuts intent.
+        NotificationCenter.default.addObserver(
+            forName: .openPaletteFromIntent,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.paletteController?.show()
+        }
+
+        // Register as service provider for Finder Services.
+        NSApp.servicesProvider = self
+        NSUpdateDynamicServices()
     }
 
     /// Exposed so the menu bar can summon the palette.
@@ -76,6 +89,28 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         hotKey = GlobalHotKey(keyCode: pref.keyCode, modifiers: pref.modifiers) { [weak self] in
             self?.paletteController?.toggle()
         }
+    }
+
+    // MARK: - Finder Services
+
+    /// Receives file URLs / text selected in Finder → pre-fills the palette query.
+    @objc func runWithRelay(_ pasteboard: NSPasteboard,
+                            userData: String,
+                            error: AutoreleasingUnsafeMutablePointer<NSString?>) {
+        var query = ""
+        if let urls = pasteboard.readObjects(forClasses: [NSURL.self], options: nil) as? [URL], !urls.isEmpty {
+            query = urls.map { "'\($0.path)'" }.joined(separator: " ")
+        } else if let text = pasteboard.string(forType: .string) {
+            query = text
+        }
+        paletteController?.show(withQuery: query)
+    }
+
+    /// Opens the palette from the Finder Services menu without pre-filling a query.
+    @objc func openRelayPalette(_ pasteboard: NSPasteboard,
+                                userData: String,
+                                error: AutoreleasingUnsafeMutablePointer<NSString?>) {
+        paletteController?.show()
     }
 
     private func applyActivationPolicy() {

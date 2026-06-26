@@ -26,5 +26,40 @@
 	<string>NSApplication</string>
 	<key>NSHumanReadableCopyright</key>
 	<string>Relay — Native macOS Command Palette &amp; Task Runner.</string>
+	<key>NSServices</key>
+	<array>
+		<dict>
+			<key>NSMenuItem</key>
+			<dict>
+				<key>default</key>
+				<string>Run with Relay…</string>
+			</dict>
+			<key>NSMessage</key>
+			<string>runWithRelay</string>
+			<key>NSPortName</key>
+			<string>Relay</string>
+			<key>NSSendTypes</key>
+			<array>
+				<string>public.file-url</string>
+				<string>public.plain-text</string>
+			</array>
+		</dict>
+		<dict>
+			<key>NSMenuItem</key>
+			<dict>
+				<key>default</key>
+				<string>Open Relay Palette</string>
+			</dict>
+			<key>NSMessage</key>
+			<string>openRelayPalette</string>
+			<key>NSPortName</key>
+			<string>Relay</string>
+			<key>NSKeyEquivalent</key>
+			<dict>
+				<key>default</key>
+				<string></string>
+			</dict>
+		</dict>
+	</array>
 </dict>
 </plist>

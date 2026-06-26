@@ -9,7 +9,7 @@ final class TaskLibraryModel {
 
     private(set) var tasks: [RelayTask] = []
 
-    private let store: any TaskStoring
+    let store: any TaskStoring
 
     init(store: any TaskStoring) {
         self.store = store

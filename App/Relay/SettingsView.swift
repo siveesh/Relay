@@ -1,8 +1,10 @@
 import SwiftUI
 import RelaySecurity
 
-/// The app's settings window: General, Variables, and Security panes.
+/// The app's settings window: General, Variables, Security, and Data panes.
 struct SettingsView: View {
+    let environment: AppEnvironment
+
     var body: some View {
         TabView {
             GeneralSettingsView()
@@ -11,8 +13,10 @@ struct SettingsView: View {
                 .tabItem { Label("Variables", systemImage: "dollarsign.circle") }
             SecuritySettingsView()
                 .tabItem { Label("Security", systemImage: "lock.shield") }
+            DataSettingsView(environment: environment)
+                .tabItem { Label("Data", systemImage: "externaldrive") }
         }
-        .frame(width: 520, height: 420)
+        .frame(width: 520, height: 460)
     }
 }
 

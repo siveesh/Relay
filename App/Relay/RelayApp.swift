@@ -41,16 +41,22 @@ struct RelayApp: App {
         }
         .windowResizability(.contentSize)
 
+        Window("Import Shell History", id: WindowID.historyImport) {
+            HistoryImportView(environment: appDelegate.environment)
+        }
+        .windowResizability(.contentSize)
+
         Settings {
-            SettingsView()
+            SettingsView(environment: appDelegate.environment)
         }
     }
 }
 
 /// Stable identifiers for the app's auxiliary windows.
 enum WindowID {
-    static let library = "relay.library"
-    static let tasks   = "relay.tasks"
-    static let history = "relay.history"
-    static let about   = "relay.about"
+    static let library       = "relay.library"
+    static let tasks         = "relay.tasks"
+    static let history       = "relay.history"
+    static let about         = "relay.about"
+    static let historyImport = "relay.historyImport"
 }

@@ -20,24 +20,33 @@ final class CommandLibraryModel {
 
     /// Loads the library from disk.
     /// On first run (empty store) seeds all samples. On subsequent runs, merges any samples
-    /// whose IDs are not already present so newly added sample commands appear automatically.
+    /// not already present (matched by name) so newly added sample commands appear automatically.
     func load() async {
         do {
             var loaded = try await store.loadCommands()
             if loaded.isEmpty {
                 loaded = RelayCommand.samples
+                try? await store.save(loaded)
             } else {
-                let existingIDs = Set(loaded.map(\.id))
-                let newSamples = RelayCommand.samples.filter { !existingIDs.contains($0.id) }
+                // Match by lowercased name — UUIDs are not stable across launches.
+                let existingNames = Set(loaded.map { $0.name.lowercased() })
+                let newSamples = RelayCommand.samples.filter { !existingNames.contains($0.name.lowercased()) }
                 if !newSamples.isEmpty {
                     loaded.append(contentsOf: newSamples)
+                    try? await store.save(loaded)
                 }
             }
-            try? await store.save(loaded)
             commands = loaded
         } catch {
             commands = RelayCommand.samples
         }
+    }
+
+    /// Replaces the entire library with the built-in sample commands.
+    func resetToSamples() async {
+        let samples = RelayCommand.samples
+        try? await store.save(samples)
+        commands = samples
     }
 
     // MARK: Mutations

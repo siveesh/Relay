@@ -13,10 +13,12 @@ struct DataSettingsView: View {
     @State private var isImporting = false
     @State private var exportPayload: BackupBundle?
     @State private var statusMessage: String?
+    @State private var showResetConfirm = false
 
     var body: some View {
         Form {
             backupSection
+            resetSection
             versionsSection
             iCloudSection
         }
@@ -71,6 +73,36 @@ struct DataSettingsView: View {
             }
         } header: {
             Text("Backup & Restore")
+        }
+    }
+
+    private var resetSection: some View {
+        Section {
+            HStack {
+                VStack(alignment: .leading) {
+                    Text("Replace the entire library with the built-in sample commands.")
+                        .foregroundStyle(.secondary)
+                        .font(.caption)
+                }
+                Spacer()
+                Button("Reset to Samples…", role: .destructive) {
+                    showResetConfirm = true
+                }
+            }
+        } header: {
+            Text("Reset")
+        }
+        .confirmationDialog(
+            "Reset Command Library?",
+            isPresented: $showResetConfirm,
+            titleVisibility: .visible
+        ) {
+            Button("Reset to Samples", role: .destructive) {
+                Task { await resetLibrary() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will permanently delete all your commands and replace them with the built-in samples. Back up first if you want to keep your changes.")
         }
     }
 
@@ -145,6 +177,12 @@ struct DataSettingsView: View {
         } catch {
             await MainActor.run { statusMessage = "Restore failed: \(error.localizedDescription)" }
         }
+    }
+
+    private func resetLibrary() async {
+        await environment.library.resetToSamples()
+        refreshSnapshots()
+        statusMessage = "Library reset to \(environment.library.commands.count) sample commands."
     }
 
     private func restoreSnapshot(_ url: URL) async {

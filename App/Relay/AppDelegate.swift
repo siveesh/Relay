@@ -15,6 +15,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var resultPresenter: ResultPanelController?
     private var hotKey: GlobalHotKey?
     private var hotKeyObserver: NSObjectProtocol?
+    private var variablesObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         applyActivationPolicy()
@@ -50,6 +51,16 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             queue: .main
         ) { [weak self] _ in
             self?.registerHotKey(HotKeyPreference.load())
+        }
+
+        // Rebuild the variable resolver when the user edits custom variables.
+        variablesObserver = NotificationCenter.default.addObserver(
+            forName: .customVariablesDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] note in
+            guard let dict = note.object as? [String: String] else { return }
+            self?.environment.updateCustomVariables(dict)
         }
     }
 

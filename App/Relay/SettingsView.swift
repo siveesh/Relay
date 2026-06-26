@@ -1,16 +1,18 @@
 import SwiftUI
 import RelaySecurity
 
-/// The app's settings window: General and Security panes.
+/// The app's settings window: General, Variables, and Security panes.
 struct SettingsView: View {
     var body: some View {
         TabView {
             GeneralSettingsView()
                 .tabItem { Label("General", systemImage: "gearshape") }
+            CustomVariablesView()
+                .tabItem { Label("Variables", systemImage: "dollarsign.circle") }
             SecuritySettingsView()
                 .tabItem { Label("Security", systemImage: "lock.shield") }
         }
-        .frame(width: 480, height: 360)
+        .frame(width: 520, height: 420)
     }
 }
 
@@ -40,6 +42,94 @@ private struct GeneralSettingsView: View {
     private func bundleString(_ key: String) -> String {
         Bundle.main.infoDictionary?[key] as? String ?? "—"
     }
+}
+
+// MARK: - Custom Variables
+
+/// Editor for user-defined Relay variables ($NAS, $CurrentProject, etc.).
+/// Values are persisted in UserDefaults and injected into VariableResolver at launch.
+private struct CustomVariablesView: View {
+
+    static let userDefaultsKey = "relay.customVariables"
+
+    @State private var entries: [VarEntry] = CustomVariablesView.load()
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Form {
+                Section {
+                    ForEach(Array(entries.enumerated()), id: \.offset) { index, _ in
+                        HStack(spacing: 6) {
+                            Text("$").foregroundStyle(.secondary).font(.system(.body, design: .monospaced))
+                            TextField("NAME", text: $entries[index].key)
+                                .font(.system(.body, design: .monospaced))
+                                .frame(maxWidth: 130)
+                            Text("=").foregroundStyle(.secondary)
+                            TextField("value or path", text: $entries[index].value)
+                            Button(role: .destructive) {
+                                entries.remove(at: index)
+                                save()
+                            } label: {
+                                Image(systemName: "minus.circle.fill").foregroundStyle(.red)
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                    Button {
+                        entries.append(VarEntry(key: "", value: ""))
+                    } label: {
+                        Label("Add Variable", systemImage: "plus.circle")
+                    }
+                } header: {
+                    Text("Custom Variables")
+                } footer: {
+                    Text("Use **$NAME** in any command, working directory, or environment value. Built-ins like $Desktop and $Clipboard are always available and cannot be overridden here.")
+                        .font(.caption).foregroundStyle(.secondary)
+                }
+            }
+            .formStyle(.grouped)
+            .onChange(of: entries) { _, _ in save() }
+
+            Divider()
+            HStack {
+                Spacer()
+                Text("Changes apply to new executions immediately.")
+                    .font(.caption2).foregroundStyle(.tertiary)
+            }
+            .padding(.horizontal, 20).padding(.vertical, 8)
+        }
+    }
+
+    // MARK: Persistence
+
+    private static func load() -> [VarEntry] {
+        guard let dict = UserDefaults.standard.dictionary(forKey: userDefaultsKey) as? [String: String] else {
+            return [
+                VarEntry(key: "NAS", value: "/Volumes/NAS"),
+                VarEntry(key: "CurrentProject", value: "~/Developer"),
+            ]
+        }
+        return dict.sorted { $0.key < $1.key }.map { VarEntry(key: $0.key, value: $0.value) }
+    }
+
+    private func save() {
+        var dict: [String: String] = [:]
+        for entry in entries where !entry.key.trimmingCharacters(in: .whitespaces).isEmpty {
+            dict[entry.key.trimmingCharacters(in: .whitespaces)] = entry.value
+        }
+        UserDefaults.standard.set(dict, forKey: Self.userDefaultsKey)
+        // Notify AppEnvironment so the running VariableResolver picks up the change.
+        NotificationCenter.default.post(name: .customVariablesDidChange, object: dict)
+    }
+}
+
+private struct VarEntry: Equatable {
+    var key: String
+    var value: String
+}
+
+extension Notification.Name {
+    static let customVariablesDidChange = Notification.Name("relay.customVariablesDidChange")
 }
 
 private struct SecuritySettingsView: View {
@@ -83,8 +173,11 @@ private struct SecuritySettingsView: View {
                 LabeledContent("Status") {
                     StatusPill(ok: model.helperStatus == .enabled, text: helperStatusText)
                 }
-                Text("For built-in privileged actions Relay uses a signed helper that exposes only a fixed set of curated operations — never arbitrary commands.")
+                Text("Relay uses a signed helper that exposes only these curated operations — never arbitrary commands.")
                     .font(.caption).foregroundStyle(.secondary)
+
+                PrivilegedOperationsGrid()
+
                 if model.helperStatus == .notFound {
                     Text("The helper executable is not included in this build. It ships in the signed release version of Relay.")
                         .font(.caption).foregroundStyle(.secondary)
@@ -128,5 +221,31 @@ private struct StatusPill: View {
             Text(text)
         }
         .font(.callout)
+    }
+}
+
+/// Grid showing every curated privileged operation the helper can perform.
+private struct PrivilegedOperationsGrid: View {
+    private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
+
+    var body: some View {
+        LazyVGrid(columns: columns, spacing: 12) {
+            ForEach(PrivilegedOperation.allCases, id: \.self) { op in
+                VStack(spacing: 6) {
+                    Image(systemName: op.icon)
+                        .font(.system(size: 22))
+                        .foregroundStyle(.secondary)
+                    Text(op.summary)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .multilineTextAlignment(.center)
+                        .fixedSize(horizontal: false, vertical: true)
+                }
+                .frame(maxWidth: .infinity)
+                .padding(10)
+                .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+            }
+        }
+        .padding(.vertical, 4)
     }
 }

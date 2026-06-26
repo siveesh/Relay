@@ -69,8 +69,26 @@ final class AppEnvironment {
             search: FuzzySearchEngine(),
             executor: AuthorizedExecutor(base: ShellExecutor()),
             notifications: NotificationService(),
-            resolver: VariableResolver(context: SystemContextProvider())
+            resolver: VariableResolver(
+                custom: AppEnvironment.loadCustomVariables(),
+                context: SystemContextProvider()
+            )
         )
+    }
+
+    /// Reads the user's custom variable dictionary from UserDefaults.
+    static func loadCustomVariables() -> [String: String] {
+        UserDefaults.standard.dictionary(forKey: "relay.customVariables") as? [String: String] ?? [
+            "NAS": "/Volumes/NAS",
+            "CurrentProject": (NSHomeDirectory() as NSString).appendingPathComponent("Developer"),
+        ]
+    }
+
+    /// Replaces the variable resolver with one using an updated custom-variable dictionary.
+    /// Called whenever the user edits custom variables in Settings.
+    func updateCustomVariables(_ custom: [String: String]) {
+        let newResolver = VariableResolver(custom: custom, context: SystemContextProvider())
+        runCoordinator.updateResolver(newResolver)
     }
 
     /// Builds a fresh palette view model bound to the current library and usage history.

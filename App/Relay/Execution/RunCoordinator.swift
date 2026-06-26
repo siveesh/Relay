@@ -16,8 +16,8 @@ final class RunCoordinator {
 
     private let executor: any CommandExecuting
     private let notifications: any NotificationPosting
-    private let resolver: any VariableResolving
-    private let taskRunner: TaskRunner
+    private var resolver: any VariableResolving
+    private var taskRunner: TaskRunner
     let history: HistoryModel
 
     /// The in-flight execution task, retained so it can be cancelled.
@@ -52,6 +52,12 @@ final class RunCoordinator {
     /// Cancels the in-flight command (terminates the process via the executor).
     func cancelCurrent() {
         currentTask?.cancel()
+    }
+
+    /// Swaps in a new variable resolver (e.g. after the user edits custom variables).
+    func updateResolver(_ newResolver: any VariableResolving) {
+        resolver = newResolver
+        taskRunner = TaskRunner(executor: executor, notifications: notifications, resolver: newResolver)
     }
 
     /// Runs a workflow task, posting a summary notification on completion.

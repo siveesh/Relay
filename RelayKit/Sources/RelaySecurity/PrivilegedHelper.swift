@@ -10,12 +10,32 @@ import ServiceManagement
 public enum PrivilegedOperation: String, Codable, Sendable, CaseIterable {
     case flushDNSCache
     case renewDHCPLease
+    case repairPermissions
+    case restartService
+    case mountProtectedPath
+    case editProtectedFile
 
     /// Human-readable description shown in the UI before the user authorizes the action.
     public var summary: String {
         switch self {
-        case .flushDNSCache: return "Flush the system DNS cache"
-        case .renewDHCPLease: return "Renew the primary network DHCP lease"
+        case .flushDNSCache:      return "Flush the system DNS cache"
+        case .renewDHCPLease:     return "Renew the primary network DHCP lease"
+        case .repairPermissions:  return "Repair file permissions on system directories"
+        case .restartService:     return "Restart a launchd system service"
+        case .mountProtectedPath: return "Mount a volume at a protected path"
+        case .editProtectedFile:  return "Write to a protected system configuration file"
+        }
+    }
+
+    /// SF Symbol for display in the privileged-operations grid.
+    public var icon: String {
+        switch self {
+        case .flushDNSCache:      return "globe.badge.chevron.backward"
+        case .renewDHCPLease:     return "arrow.triangle.2.circlepath"
+        case .repairPermissions:  return "lock.rotation"
+        case .restartService:     return "arrow.clockwise.circle"
+        case .mountProtectedPath: return "externaldrive.badge.plus"
+        case .editProtectedFile:  return "pencil.and.list.clipboard"
         }
     }
 }

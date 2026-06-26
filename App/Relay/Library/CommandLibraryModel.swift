@@ -18,17 +18,24 @@ final class CommandLibraryModel {
         self.store = store
     }
 
-    /// Loads the library from disk, seeding the sample commands on first run.
+    /// Loads the library from disk.
+    /// On first run (empty store) seeds all samples. On subsequent runs, merges any samples
+    /// whose IDs are not already present so newly added sample commands appear automatically.
     func load() async {
         do {
             var loaded = try await store.loadCommands()
             if loaded.isEmpty {
                 loaded = RelayCommand.samples
-                try? await store.save(loaded)
+            } else {
+                let existingIDs = Set(loaded.map(\.id))
+                let newSamples = RelayCommand.samples.filter { !existingIDs.contains($0.id) }
+                if !newSamples.isEmpty {
+                    loaded.append(contentsOf: newSamples)
+                }
             }
+            try? await store.save(loaded)
             commands = loaded
         } catch {
-            // A corrupt or unreadable store should not leave the user with nothing.
             commands = RelayCommand.samples
         }
     }

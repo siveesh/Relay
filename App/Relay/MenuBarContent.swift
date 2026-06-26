@@ -47,6 +47,8 @@ struct MenuBarContent: View {
         }
         .keyboardShortcut(",", modifiers: .command)
 
+        Button("About Relay…") { openWindow(id: WindowID.about) }
+
         Button("Quit Relay") {
             NSApplication.shared.terminate(nil)
         }

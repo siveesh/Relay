@@ -36,6 +36,11 @@ struct RelayApp: App {
         }
         .defaultSize(width: 820, height: 560)
 
+        Window("About Relay", id: WindowID.about) {
+            AboutView()
+        }
+        .windowResizability(.contentSize)
+
         Settings {
             SettingsView()
         }
@@ -45,6 +50,7 @@ struct RelayApp: App {
 /// Stable identifiers for the app's auxiliary windows.
 enum WindowID {
     static let library = "relay.library"
-    static let tasks = "relay.tasks"
+    static let tasks   = "relay.tasks"
     static let history = "relay.history"
+    static let about   = "relay.about"
 }

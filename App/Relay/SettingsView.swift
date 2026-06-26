@@ -16,6 +16,7 @@ struct SettingsView: View {
 
 private struct GeneralSettingsView: View {
     @AppStorage(AppDelegate.showDockIconKey) private var showDockIcon = false
+    @State private var hotKeyPref = HotKeyPreference.load()
 
     var body: some View {
         Form {
@@ -24,7 +25,9 @@ private struct GeneralSettingsView: View {
                     .onChange(of: showDockIcon) { _, newValue in
                         NSApp.setActivationPolicy(newValue ? .regular : .accessory)
                     }
-                LabeledContent("Global Shortcut", value: "⌥ Space")
+                LabeledContent("Global Shortcut") {
+                    HotKeyRecorderView(preference: $hotKeyPref)
+                }
             }
             Section("About") {
                 LabeledContent("Version", value: bundleString("CFBundleShortVersionString"))

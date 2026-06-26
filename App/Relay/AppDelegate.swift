@@ -14,6 +14,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     private var paletteController: PalettePanelController?
     private var resultPresenter: ResultPanelController?
     private var hotKey: GlobalHotKey?
+    private var hotKeyObserver: NSObjectProtocol?
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         applyActivationPolicy()
@@ -40,15 +41,30 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
         let controller = PalettePanelController(environment: environment)
         paletteController = controller
 
-        // Default global shortcut: ⌥Space. Made configurable in a later milestone.
-        hotKey = GlobalHotKey(keyCode: UInt32(kVK_Space), modifiers: UInt32(optionKey)) { [weak controller] in
-            controller?.toggle()
+        registerHotKey(HotKeyPreference.load())
+
+        // Re-register whenever the user changes the shortcut in Settings.
+        hotKeyObserver = NotificationCenter.default.addObserver(
+            forName: .hotKeyPreferenceDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            self?.registerHotKey(HotKeyPreference.load())
         }
     }
 
     /// Exposed so the menu bar can summon the palette.
     func togglePalette() {
         paletteController?.toggle()
+    }
+
+    // MARK: Private
+
+    private func registerHotKey(_ pref: HotKeyPreference) {
+        hotKey = nil   // unregisters the old Carbon hot key via deinit
+        hotKey = GlobalHotKey(keyCode: pref.keyCode, modifiers: pref.modifiers) { [weak self] in
+            self?.paletteController?.toggle()
+        }
     }
 
     private func applyActivationPolicy() {

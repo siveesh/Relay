@@ -4,13 +4,20 @@ import Foundation
 ///
 /// An `actor` so concurrent executions are serialized at the API boundary and shared state
 /// is race-free. The implementation reads `stdout`/`stderr` concurrently (avoiding the
-/// classic pipe-buffer deadlock) and enforces the command's timeout.
-///
-/// > Milestone note: real output streaming, progress reporting, and full cooperative
-/// > cancellation are completed in Milestone 3. This M1 version is correct and deadlock-free.
+/// classic pipe-buffer deadlock), enforces the command's timeout, and supports cooperative
+/// cancellation: cancelling the awaiting `Task` terminates the process and throws
+/// `ExecutionError.cancelled`. When `captureOutput` is `false`, output is discarded to
+/// `/dev/null` rather than read into memory.
 public actor ShellExecutor: CommandExecuting {
 
     public init() {}
+
+    /// Holds a `Process` so it can be referenced from the (Sendable) cancellation handler.
+    /// `Process.terminate()` is safe to call from any thread.
+    private final class ProcessBox: @unchecked Sendable {
+        let process: Process
+        init(_ process: Process) { self.process = process }
+    }
 
     public func run(_ command: RelayCommand) async throws -> CommandResult {
         let start = Date()
@@ -34,10 +41,11 @@ public actor ShellExecutor: CommandExecuting {
         for (key, value) in command.environment { environment[key] = value }
         process.environment = environment
 
-        let stdoutPipe = Pipe()
-        let stderrPipe = Pipe()
-        process.standardOutput = stdoutPipe
-        process.standardError = stderrPipe
+        // Honor captureOutput: read pipes only when capturing, else discard to /dev/null.
+        let stdoutPipe = command.captureOutput ? Pipe() : nil
+        let stderrPipe = command.captureOutput ? Pipe() : nil
+        process.standardOutput = stdoutPipe ?? FileHandle.nullDevice
+        process.standardError = stderrPipe ?? FileHandle.nullDevice
 
         do {
             try process.run()
@@ -45,41 +53,50 @@ public actor ShellExecutor: CommandExecuting {
             throw ExecutionError.launchFailed(error.localizedDescription)
         }
 
-        // Enforce the timeout by terminating the process if it overruns. The task inherits
-        // this actor's isolation, so touching `process` here is race-free.
-        let timeoutTask: Task<Void, Never>?
-        if command.timeoutSeconds > 0 {
-            let seconds = command.timeoutSeconds
-            timeoutTask = Task { [process] in
-                try? await Task.sleep(for: .seconds(seconds))
-                if process.isRunning { process.terminate() }
+        let box = ProcessBox(process)
+
+        return try await withTaskCancellationHandler {
+            // Enforce the timeout by terminating the process if it overruns. The task inherits
+            // this actor's isolation, so touching `process` here is race-free.
+            let timeoutTask: Task<Void, Never>?
+            if command.timeoutSeconds > 0 {
+                let seconds = command.timeoutSeconds
+                timeoutTask = Task { [process] in
+                    try? await Task.sleep(for: .seconds(seconds))
+                    if process.isRunning { process.terminate() }
+                }
+            } else {
+                timeoutTask = nil
             }
-        } else {
-            timeoutTask = nil
+
+            // Read both pipes off the actor concurrently so a large stream on one cannot block
+            // the other (the pipe-buffer deadlock).
+            async let stdoutData = Self.readToEnd(stdoutPipe?.fileHandleForReading)
+            async let stderrData = Self.readToEnd(stderrPipe?.fileHandleForReading)
+
+            await Self.waitForExit(process)
+            timeoutTask?.cancel()
+
+            if Task.isCancelled { throw ExecutionError.cancelled }
+
+            let outText = String(decoding: await stdoutData, as: UTF8.self)
+            let errText = String(decoding: await stderrData, as: UTF8.self)
+
+            return CommandResult(
+                stdout: outText,
+                stderr: errText,
+                exitCode: process.terminationStatus,
+                duration: Date().timeIntervalSince(start)
+            )
+        } onCancel: {
+            box.process.terminate()
         }
-
-        // Read both pipes off the actor concurrently so a large stream on one cannot block
-        // the other (the pipe-buffer deadlock).
-        async let stdoutData = Self.readToEnd(stdoutPipe.fileHandleForReading)
-        async let stderrData = Self.readToEnd(stderrPipe.fileHandleForReading)
-
-        await Self.waitForExit(process)
-        timeoutTask?.cancel()
-
-        let outText = String(decoding: await stdoutData, as: UTF8.self)
-        let errText = String(decoding: await stderrData, as: UTF8.self)
-
-        return CommandResult(
-            stdout: outText,
-            stderr: errText,
-            exitCode: process.terminationStatus,
-            duration: Date().timeIntervalSince(start)
-        )
     }
 
-    /// Reads a file handle to EOF off the cooperative pool.
-    private static func readToEnd(_ handle: FileHandle) async -> Data {
-        await Task.detached(priority: .userInitiated) {
+    /// Reads a file handle to EOF off the cooperative pool. `nil` (output not captured) → empty.
+    private static func readToEnd(_ handle: FileHandle?) async -> Data {
+        guard let handle else { return Data() }
+        return await Task.detached(priority: .userInitiated) {
             (try? handle.readToEnd()) ?? Data()
         }.value
     }

@@ -26,10 +26,14 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             await environment.notifications.requestAuthorization()
         }
 
-        // Wire execution results to a transient glass panel.
+        // Wire execution progress + results to a transient glass panel.
         let presenter = ResultPanelController()
         resultPresenter = presenter
-        environment.runCoordinator.onResult = { [weak presenter] record in
+        let coordinator = environment.runCoordinator
+        coordinator.onRunningStarted = { [weak presenter, weak coordinator] name in
+            presenter?.showRunning(name) { coordinator?.cancelCurrent() }
+        }
+        coordinator.onResult = { [weak presenter] record in
             presenter?.show(record)
         }
 

@@ -1,4 +1,5 @@
 import SwiftUI
+import UniformTypeIdentifiers
 import RelayCore
 
 /// The Spotlight-style command palette. A keyboard-first, Liquid Glass surface for searching
@@ -14,6 +15,7 @@ public struct CommandPaletteView: View {
 
     @FocusState private var searchFocused: Bool
     @State private var appeared = false
+    @State private var dropTargeted = false
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(
@@ -61,16 +63,17 @@ public struct CommandPaletteView: View {
 
     private var searchField: some View {
         HStack(spacing: 12) {
-            Image(systemName: "chevron.right.2")
+            Image(systemName: dropTargeted ? "arrow.down.circle.fill" : "chevron.right.2")
                 .font(.system(size: 16, weight: .bold))
-                .foregroundStyle(RelayTheme.accentGradient)
+                .foregroundStyle(dropTargeted ? AnyShapeStyle(Color.accentColor) : AnyShapeStyle(RelayTheme.accentGradient))
+                .animation(.easeOut(duration: 0.15), value: dropTargeted)
 
             TextField("Run a command…", text: $model.query)
                 .textFieldStyle(.plain)
                 .font(.system(size: 20, weight: .regular))
                 .focused($searchFocused)
                 .accessibilityLabel("Command search")
-                .accessibilityHint("Type to search; press Return to run the top result")
+                .accessibilityHint("Type to search; press Return to run the top result. Drag files here to insert their paths.")
                 .onSubmit(runSelected)
                 .onKeyPress(.upArrow) { model.selectPrevious(); return .handled }
                 .onKeyPress(.downArrow) { model.selectNext(); return .handled }
@@ -89,6 +92,30 @@ public struct CommandPaletteView: View {
         }
         .padding(.horizontal, 18)
         .frame(height: 60)
+        .onDrop(of: [UTType.fileURL], isTargeted: $dropTargeted) { providers in
+            var paths: [String] = []
+            let group = DispatchGroup()
+            for provider in providers {
+                group.enter()
+                provider.loadItem(forTypeIdentifier: UTType.fileURL.identifier, options: nil) { item, _ in
+                    defer { group.leave() }
+                    guard let data = item as? Data,
+                          let url = URL(dataRepresentation: data, relativeTo: nil) else { return }
+                    paths.append(url.path)
+                }
+            }
+            group.notify(queue: .main) {
+                guard !paths.isEmpty else { return }
+                let insertion = paths.map { "'\($0)'" }.joined(separator: " ")
+                if model.query.isEmpty || model.query.hasSuffix(" ") {
+                    model.query += insertion
+                } else {
+                    model.query += " " + insertion
+                }
+                searchFocused = true
+            }
+            return true
+        }
     }
 
     // MARK: Results

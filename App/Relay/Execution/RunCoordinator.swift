@@ -11,6 +11,8 @@ import RelayTasks
 final class RunCoordinator {
 
     private(set) var isRunning = false
+    /// Name of the command/task currently executing (for progress UI).
+    private(set) var runningName: String?
 
     private let executor: any CommandExecuting
     private let notifications: any NotificationPosting
@@ -18,8 +20,14 @@ final class RunCoordinator {
     private let taskRunner: TaskRunner
     let history: HistoryModel
 
+    /// The in-flight execution task, retained so it can be cancelled.
+    private var currentTask: Task<Void, Never>?
+
     /// Presentation hook set by the app delegate to show a result panel.
     var onResult: ((ExecutionRecord) -> Void)?
+    /// Called when a foreground command starts, so a progress/cancel panel can be shown.
+    /// The running panel is later replaced by the result panel via `onResult`.
+    var onRunningStarted: ((String) -> Void)?
 
     init(
         executor: any CommandExecuting,
@@ -38,7 +46,12 @@ final class RunCoordinator {
     /// Public entry point: asks for confirmation if required, then runs.
     func requestRun(_ command: RelayCommand) {
         if command.requiresConfirmation, !confirm(command) { return }
-        Task { await run(command) }
+        currentTask = Task { await run(command) }
+    }
+
+    /// Cancels the in-flight command (terminates the process via the executor).
+    func cancelCurrent() {
+        currentTask?.cancel()
     }
 
     /// Runs a workflow task, posting a summary notification on completion.
@@ -58,32 +71,51 @@ final class RunCoordinator {
 
     private func run(_ command: RelayCommand) async {
         isRunning = true
-        defer { isRunning = false }
+        runningName = command.name
+        // Foreground commands show a progress/cancel panel; background ones run silently.
+        if !command.runInBackground { onRunningStarted?(command.name) }
+        defer {
+            isRunning = false
+            runningName = nil
+        }
 
         let resolvedCommand = await resolve(command)
         let startedAt = Date()
+
+        var cancelled = false
         let record: ExecutionRecord
         do {
             let result = try await executor.run(resolvedCommand)
             record = ExecutionRecord.from(result, command: command, startedAt: startedAt)
+        } catch let error as ExecutionError where error == .cancelled {
+            cancelled = true
+            record = ExecutionRecord.failure("Cancelled", command: command, startedAt: startedAt)
         } catch {
             record = ExecutionRecord.failure(error.localizedDescription, command: command, startedAt: startedAt)
         }
 
         history.append(record)
+        await notify(command: command, record: record, cancelled: cancelled)
 
-        if command.notifyOnCompletion {
-            let summary = record.succeeded ? "Completed successfully" : "Finished with errors"
-            await notifications.post(
-                record.succeeded
-                    ? .completed(title: command.name, body: summary)
-                    : .failed(title: command.name, body: summary)
-            )
-        }
-
-        // Only surface a result window when there is something to show or it failed.
-        if command.captureOutput || !record.succeeded {
+        // Foreground runs replace the progress panel with the result (shows "No output" if
+        // empty); background runs stay silent.
+        if !command.runInBackground {
             onResult?(record)
+        }
+    }
+
+    /// Posts the appropriate notification category for the outcome.
+    private func notify(command: RelayCommand, record: ExecutionRecord, cancelled: Bool) async {
+        guard command.notifyOnCompletion else { return }
+        if cancelled {
+            await notifications.post(.cancelled(title: command.name, body: "Execution cancelled."))
+        } else if record.succeeded && !record.stderr.isEmpty {
+            // Exit 0 but wrote to stderr → completed with warnings.
+            await notifications.post(.warning(title: command.name, body: "Completed with warnings."))
+        } else if record.succeeded {
+            await notifications.post(.completed(title: command.name, body: "Completed successfully."))
+        } else {
+            await notifications.post(.failed(title: command.name, body: "Finished with errors."))
         }
     }
 

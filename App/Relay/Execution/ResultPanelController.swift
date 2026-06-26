@@ -10,14 +10,25 @@ final class ResultPanelController: NSObject, NSWindowDelegate {
     private var panel: FloatingPanel?
 
     func show(_ record: ExecutionRecord) {
-        let panel = panel ?? makePanel()
-        self.panel = panel
-
         let view = ExecutionResultView(record: record) { [weak self] in self?.hide() }
             .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
             .padding(16)
-        panel.contentView = NSHostingView(rootView: view)
+        present(view)
+    }
 
+    /// Shows a running/progress panel with a Cancel button. The panel is replaced by the
+    /// result panel when the run finishes (including when cancelled).
+    func showRunning(_ name: String, onCancel: @escaping () -> Void) {
+        let view = RunningView(name: name, onCancel: onCancel)
+            .glassEffect(.regular, in: RoundedRectangle(cornerRadius: 20, style: .continuous))
+            .padding(16)
+        present(view)
+    }
+
+    private func present(_ view: some View) {
+        let panel = panel ?? makePanel()
+        self.panel = panel
+        panel.contentView = NSHostingView(rootView: view)
         position(panel)
         NSApp.activate()
         panel.makeKeyAndOrderFront(nil)
@@ -55,5 +66,26 @@ final class ResultPanelController: NSObject, NSWindowDelegate {
             x: visible.midX - size.width / 2,
             y: visible.midY - size.height / 2
         ))
+    }
+}
+
+/// A compact progress panel shown while a foreground command runs.
+private struct RunningView: View {
+    let name: String
+    let onCancel: () -> Void
+
+    var body: some View {
+        HStack(spacing: 14) {
+            ProgressView().controlSize(.small)
+            VStack(alignment: .leading, spacing: 1) {
+                Text("Running…").font(.headline)
+                Text(name).font(.caption).foregroundStyle(.secondary).lineLimit(1)
+            }
+            Spacer(minLength: 16)
+            Button("Cancel", role: .cancel, action: onCancel)
+                .keyboardShortcut(.cancelAction)
+        }
+        .padding(18)
+        .frame(width: 360)
     }
 }

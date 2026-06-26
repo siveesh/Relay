@@ -27,6 +27,22 @@ public enum PrivilegedOperation: String, Codable, Sendable, CaseIterable {
         }
     }
 
+    /// Shell command to run with administrator privileges for operations that have a fixed invocation.
+    /// Returns `nil` for parameterized operations (restartService, mountProtectedPath, editProtectedFile)
+    /// that require caller-supplied arguments — those should be run as commands with `requiresElevation`.
+    public var elevatedShellCommand: String? {
+        switch self {
+        case .flushDNSCache:
+            return "dscacheutil -flushcache && killall -HUP mDNSResponder"
+        case .renewDHCPLease:
+            return "ipconfig set $(route get default | awk '/interface: /{print $2}') DHCP"
+        case .repairPermissions:
+            return "diskutil resetUserPermissions / $(id -u)"
+        case .restartService, .mountProtectedPath, .editProtectedFile:
+            return nil
+        }
+    }
+
     /// SF Symbol for display in the privileged-operations grid.
     public var icon: String {
         switch self {

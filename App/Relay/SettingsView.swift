@@ -175,12 +175,13 @@ private struct SecuritySettingsView: View {
 
             Section("Privileged Helper") {
                 LabeledContent("Status") {
-                    StatusPill(ok: model.helperStatus == .enabled, text: helperStatusText)
+                    StatusPill(ok: model.helperStatus == .enabled || model.helperStatus == .notFound,
+                               text: helperStatusText)
                 }
-                Text("Relay uses a signed helper that exposes only these curated operations — never arbitrary commands.")
+                Text(helperDescription)
                     .font(.caption).foregroundStyle(.secondary)
 
-                PrivilegedOperationsGrid()
+                PrivilegedOperationsGrid { op in model.performOperation(op) }
 
                 switch model.helperStatus {
                 case .notRegistered:
@@ -191,11 +192,8 @@ private struct SecuritySettingsView: View {
                         Text("Approve the helper in System Settings ▸ General ▸ Login Items.")
                             .font(.caption).foregroundStyle(.secondary)
                     }
-                case .enabled:
+                case .enabled, .notFound:
                     EmptyView()
-                case .notFound:
-                    Text("The helper executable is not bundled in this build. It ships in the signed release version of Relay.")
-                        .font(.caption).foregroundStyle(.secondary)
                 }
                 if let message = model.message {
                     Text(message).font(.caption).foregroundStyle(.secondary)
@@ -219,7 +217,18 @@ private struct SecuritySettingsView: View {
         case .enabled:          return "Enabled"
         case .requiresApproval: return "Requires approval"
         case .notRegistered:    return "Not installed"
-        case .notFound:         return "Not available in this build"
+        case .notFound:         return "Via elevation"
+        }
+    }
+
+    private var helperDescription: String {
+        switch model.helperStatus {
+        case .enabled:
+            return "Operations run through the signed XPC helper — no password prompt per operation."
+        case .notFound:
+            return "Tap an operation below to run it with administrator privileges via the macOS authentication dialog. A persistent background helper requires a Developer ID–signed build."
+        default:
+            return "Relay exposes only these curated operations — never arbitrary commands."
         }
     }
 }
@@ -239,24 +248,30 @@ private struct StatusPill: View {
 
 /// Grid showing every curated privileged operation the helper can perform.
 private struct PrivilegedOperationsGrid: View {
+    let onRun: (PrivilegedOperation) -> Void
     private let columns = Array(repeating: GridItem(.flexible(), spacing: 12), count: 3)
 
     var body: some View {
         LazyVGrid(columns: columns, spacing: 12) {
             ForEach(PrivilegedOperation.allCases, id: \.self) { op in
-                VStack(spacing: 6) {
-                    Image(systemName: op.icon)
-                        .font(.system(size: 22))
-                        .foregroundStyle(.secondary)
-                    Text(op.summary)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                        .multilineTextAlignment(.center)
-                        .fixedSize(horizontal: false, vertical: true)
+                let runnable = op.elevatedShellCommand != nil
+                Button { onRun(op) } label: {
+                    VStack(spacing: 6) {
+                        Image(systemName: op.icon)
+                            .font(.system(size: 22))
+                            .foregroundStyle(runnable ? .primary : .secondary)
+                        Text(op.summary)
+                            .font(.caption2)
+                            .foregroundStyle(runnable ? .primary : .secondary)
+                            .multilineTextAlignment(.center)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding(10)
+                    .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
                 }
-                .frame(maxWidth: .infinity)
-                .padding(10)
-                .background(.quaternary, in: RoundedRectangle(cornerRadius: 8))
+                .buttonStyle(.plain)
+                .help(runnable ? "Run: \(op.summary)" : "Add as a command with 'Requires Elevation' to use this operation")
             }
         }
         .padding(.vertical, 4)

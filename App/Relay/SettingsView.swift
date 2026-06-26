@@ -182,11 +182,20 @@ private struct SecuritySettingsView: View {
 
                 PrivilegedOperationsGrid()
 
-                if model.helperStatus == .notFound {
-                    Text("The helper executable is not included in this build. It ships in the signed release version of Relay.")
-                        .font(.caption).foregroundStyle(.secondary)
-                } else {
+                switch model.helperStatus {
+                case .notRegistered:
                     Button("Install Helper…") { model.installHelper() }
+                case .requiresApproval:
+                    VStack(alignment: .leading, spacing: 4) {
+                        Button("Install Helper…") { model.installHelper() }
+                        Text("Approve the helper in System Settings ▸ General ▸ Login Items.")
+                            .font(.caption).foregroundStyle(.secondary)
+                    }
+                case .enabled:
+                    EmptyView()
+                case .notFound:
+                    Text("The helper executable is not bundled in this build. It ships in the signed release version of Relay.")
+                        .font(.caption).foregroundStyle(.secondary)
                 }
                 if let message = model.message {
                     Text(message).font(.caption).foregroundStyle(.secondary)
@@ -207,10 +216,10 @@ private struct SecuritySettingsView: View {
 
     private var helperStatusText: String {
         switch model.helperStatus {
-        case .enabled: return "Enabled"
+        case .enabled:          return "Enabled"
         case .requiresApproval: return "Requires approval"
-        case .notRegistered: return "Not installed"
-        case .notFound: return "Not installed"
+        case .notRegistered:    return "Not installed"
+        case .notFound:         return "Not available in this build"
         }
     }
 }
